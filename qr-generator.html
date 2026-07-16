@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <!-- Encodage des caractères -->
+  <meta charset="UTF-8"/>
+  <!-- Pour que la page soit bien affichée sur téléphone -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <!-- Titre visible dans l'onglet -->
+  <title>Generer le QR Code</title>
+
+  <!--
+    Bibliothèque externe pour générer les QR codes.
+    On la charge depuis cdnjs (site qui héberge des bibliothèques gratuites).
+  -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <style>
+    /* Supprime les marges par défaut */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Style de la page */
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #1a237e; /* Fond bleu foncé */
+      min-height: 100vh;
+      padding: 30px 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    /* La carte blanche au centre */
+    .carte {
+      background-color: white;
+      border-radius: 20px;
+      padding: 35px 30px;
+      max-width: 480px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      height: fit-content; /* La carte s'adapte au contenu */
+    }
+
+    /* En-tête avec icone et titre */
+    .entete {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    /* Grande icone en haut */
+    .entete img {
+      width: 60px;
+      height: 60px;
+      margin-bottom: 10px;
+    }
+
+    /* Titre principal */
+    .entete h1 {
+      font-size: 21px;
+      color: #1a237e;
+      font-weight: 700;
+    }
+
+    /* Description sous le titre */
+    .entete p {
+      color: #666;
+      font-size: 14px;
+      margin-top: 8px;
+      line-height: 1.6;
+    }
+
+    /* Bloc label + champ */
+    .champ {
+      margin-bottom: 18px;
+    }
+
+    /* Texte au-dessus du champ */
+    .champ label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 6px;
+    }
+
+    /* Champs de saisie et listes déroulantes */
+    .champ input,
+    .champ select {
+      width: 100%;
+      padding: 11px 14px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+      background-color: #fafafa;
+    }
+
+    /* Quand on clique dans un champ */
+    .champ input:focus,
+    .champ select:focus {
+      border-color: #1a237e;
+      background-color: white;
+    }
+
+    /* Bouton pour générer le QR code */
+    .bouton-generer {
+      width: 100%;
+      padding: 14px;
+      background-color: #1a237e;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+
+    .bouton-generer:hover {
+      background-color: #0d47a1;
+    }
+
+    /* ============================================================
+       ZONE DE RESULTAT (cachée au départ, visible après génération)
+    ============================================================ */
+    .resultat {
+      display: none; /* Caché par défaut */
+      margin-top: 30px;
+      text-align: center;
+    }
+
+    /* Classe ajoutée par JavaScript pour afficher le résultat */
+    .resultat.visible {
+      display: block;
+    }
+
+    /* Bandeau jaune d'avertissement */
+    .avertissement {
+      background-color: #fff8e1;
+      border-left: 4px solid #f9a825;
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #795548;
+      margin-bottom: 20px;
+      text-align: left;
+    }
+
+    /* Boîte qui contient le QR code */
+    #boite-qr {
+      display: inline-block;
+      padding: 16px;
+      background-color: white;
+      border: 3px solid #1a237e;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(26,35,126,0.15);
+    }
+
+    /* Nom de la matière affiché sous le QR code */
+    .label-matiere {
+      margin-top: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #1a237e;
+    }
+
+    /* Texte secondaire sous le label matière */
+    .label-secondaire {
+      font-size: 13px;
+      color: #888;
+      margin-top: 4px;
+    }
+
+    /* Bouton pour imprimer */
+    .bouton-imprimer {
+      display: block;
+      width: 100%;
+      padding: 13px;
+      background-color: #2e7d32; /* Vert */
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+
+    .bouton-imprimer:hover {
+      background-color: #1b5e20;
+    }
+
+    /* Affiche l'URL générée en petit en dessous */
+    .url-generee {
+      background-color: #f5f5f5;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 11px;
+      color: #777;
+      word-break: break-all; /* Coupe l'URL si elle est trop longue */
+      margin-top: 14px;
+      text-align: left;
+    }
+
+    /* ============================================================
+       MODE IMPRESSION
+       Cache tout sauf le QR code quand on imprime
+    ============================================================ */
+    @media print {
+      body { background: white; padding: 0; }
+      .carte { box-shadow: none; }
+      /* Cacher les éléments inutiles à l'impression */
+      .bouton-generer,
+      .bouton-imprimer,
+      .champ,
+      .entete p,
+      .url-generee,
+      .avertissement { display: none !important; }
+      /* S'assurer que le résultat est visible à l'impression */
+      .resultat { display: block !important; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="carte">
+
+  <!-- En-tête -->
+  <div class="entete">
+    <!-- Icone QR code depuis Bootstrap Icons -->
+    <img src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/qr-code.svg" alt="QR Code"/>
+    <h1>Generer le QR Code</h1>
+    <p>
+      Ce QR code sera scanne par vos etudiants a chaque cours.<br/>
+      Vous n'avez besoin de le generer <strong>qu'une seule fois</strong> par matiere.
+    </p>
+  </div>
+
+  <!-- Champ : URL du formulaire -->
+  <div class="champ">
+    <label>Adresse (URL) de votre formulaire.html</label>
+    <input
+      type="url"
+      id="url-formulaire"
+      placeholder="https://votre-compte.github.io/presences/formulaire.html"
+    />
+  </div>
+
+  <!-- Champ : Matière -->
+  <div class="champ">
+    <label>Matiere</label>
+    <input type="text" id="matiere" placeholder="Ex: Mathematiques, Informatique..."/>
+  </div>
+
+  <!-- Champ : Promotion -->
+  <div class="champ">
+    <label>Promotion (optionnel)</label>
+    <select id="promotion">
+      <option value="">-- Choisir (optionnel) --</option>
+      <option>Licence 1 (L1)</option>
+      <option>Licence 2 (L2)</option>
+      <option>Licence 3 (L3)</option>
+      <option>Master 1 (M1)</option>
+      <option>Master 2 (M2)</option>
+      <option>BTS 1ere annee</option>
+      <option>BTS 2eme annee</option>
+      <option>DUT 1ere annee</option>
+      <option>DUT 2eme annee</option>
+    </select>
+  </div>
+
+  <!-- Bouton pour générer -->
+  <button class="bouton-generer" onclick="genererQRCode()">
+    Generer le QR Code
+  </button>
+
+
+  <!-- ============================================================
+       ZONE DE RESULTAT
+       Cachée au départ. Visible après avoir cliqué sur le bouton.
+  ============================================================ -->
+  <div class="resultat" id="zone-resultat">
+
+    <!-- Avertissement impression -->
+    <div class="avertissement">
+      Important : Imprimez ce QR code et affichez-le en classe.
+      Les etudiants le scannent a chaque cours.
+      La date change automatiquement chaque jour.
+    </div>
+
+    <!-- Le QR code s'affiche ici (généré par JavaScript) -->
+    <div id="boite-qr"></div>
+
+    <!-- Nom de la matière sous le QR code -->
+    <div class="label-matiere"  id="label-matiere"></div>
+    <div class="label-secondaire">Scannez avec votre telephone</div>
+
+    <!-- L'URL complète générée -->
+    <div class="url-generee" id="url-affichee"></div>
+
+    <!-- Bouton imprimer -->
+    <button class="bouton-imprimer" onclick="window.print()">
+      Imprimer le QR Code
+    </button>
+
+  </div><!-- fin zone-resultat -->
+
+</div><!-- fin carte -->
+
+
+<!-- ============================================================
+     JAVASCRIPT
+     Pas besoin de Firebase ici, juste la génération du QR code
+============================================================ -->
+<script>
+
+  /* ----------------------------------------------------------
+     FONCTION : GENERER LE QR CODE
+     Appelée quand on clique sur le bouton "Generer"
+  ---------------------------------------------------------- */
+  function genererQRCode() {
+
+    /* Lire les valeurs des champs */
+    const urlBase  = document.getElementById('url-formulaire').value.trim();
+    const matiere  = document.getElementById('matiere').value.trim();
+    const promo    = document.getElementById('promotion').value;
+
+    /* Vérifier que l'URL est remplie */
+    if (!urlBase) {
+      alert("Veuillez entrer l'adresse URL de votre formulaire.");
+      return;
+    }
+
+    /* Vérifier que la matière est remplie */
+    if (!matiere) {
+      alert("Veuillez entrer le nom de la matiere.");
+      return;
+    }
+
+    /* -----------------------------------------------------------
+       CONSTRUIRE L'URL AVEC LES PARAMETRES
+       On ajoute la matière et la promotion à la fin de l'URL.
+       Exemple : formulaire.html?matiere=Maths&promotion=L1
+       Le formulaire lira ces paramètres pour savoir le cours.
+    ----------------------------------------------------------- */
+    const parametres = new URLSearchParams();
+    parametres.set('matiere', matiere);  /* Ajouter la matière */
+    if (promo) parametres.set('promotion', promo); /* Ajouter la promotion si choisie */
+
+    /* URL finale avec les paramètres */
+    const urlFinale = urlBase + '?' + parametres.toString();
+
+    /* -----------------------------------------------------------
+       GENERER LE QR CODE
+       On vide d'abord la boîte (au cas où on régénère)
+       puis on crée le nouveau QR code dedans
+    ----------------------------------------------------------- */
+    const boite = document.getElementById('boite-qr');
+    boite.innerHTML = ''; /* Vider le QR code précédent */
+
+    /* Créer le QR code avec la bibliothèque QRCode */
+    new QRCode(boite, {
+      text:         urlFinale,    /* Le contenu du QR code = l'URL */
+      width:        220,          /* Largeur en pixels */
+      height:       220,          /* Hauteur en pixels */
+      colorDark:    "#1a237e",    /* Couleur des carrés (bleu foncé) */
+      colorLight:   "#ffffff",    /* Couleur du fond (blanc) */
+      correctLevel: QRCode.CorrectLevel.H /* Niveau de correction d'erreur élevé */
+    });
+
+    /* Afficher le nom de la matière sous le QR code */
+    document.getElementById('label-matiere').textContent =
+      matiere + (promo ? ' - ' + promo : '');
+
+    /* Afficher l'URL générée */
+    document.getElementById('url-affichee').textContent = 'Lien : ' + urlFinale;
+
+    /* Rendre la zone de résultat visible */
+    document.getElementById('zone-resultat').classList.add('visible');
+  }
+
+</script>
+
+</body>
+</html>

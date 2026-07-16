@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <!-- Encodage des caractères (accents, etc.) -->
+  <meta charset="UTF-8" />
+  <!-- Pour que le site soit bien affiché sur téléphone -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <!-- Titre visible dans l'onglet du navigateur -->
+  <title>Feuille de Presence</title>
+
+  <style>
+    /* Supprime les marges par défaut du navigateur */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Style de la page entière */
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #1a237e; /* Fond bleu foncé */
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    /* La carte blanche au centre de la page */
+    .carte {
+      background-color: white;
+      border-radius: 16px;
+      padding: 35px 28px;
+      max-width: 460px;
+      width: 100%;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+
+    /* En-tête avec l'icone et le titre */
+    .entete {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    /* Icone en haut du formulaire */
+    .entete img {
+      width: 56px;
+      height: 56px;
+      margin-bottom: 10px;
+    }
+
+    /* Titre principal */
+    .entete h1 {
+      font-size: 21px;
+      color: #1a237e;
+      font-weight: 700;
+    }
+
+    /* Texte qui affiche la matière du cours */
+    .entete p {
+      color: #666;
+      font-size: 14px;
+      margin-top: 4px;
+    }
+
+    /* Bandeau bleu clair qui affiche la date du jour */
+    .bandeau-date {
+      background-color: #e3f2fd;
+      border-left: 4px solid #1a237e;
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #1a237e;
+      margin-bottom: 22px;
+    }
+
+    /* Bloc qui contient un label et son champ de saisie */
+    .champ {
+      margin-bottom: 16px;
+    }
+
+    /* Le texte au-dessus de chaque champ */
+    .champ label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 5px;
+    }
+
+    /* L'étoile rouge pour les champs obligatoires */
+    .champ label span {
+      color: red;
+    }
+
+    /* Les champs de saisie texte et les listes déroulantes */
+    .champ input,
+    .champ select {
+      width: 100%;
+      padding: 11px 13px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+      background-color: #fafafa;
+    }
+
+    /* Quand on clique dans un champ, la bordure devient bleue */
+    .champ input:focus,
+    .champ select:focus {
+      border-color: #1a237e;
+      background-color: white;
+    }
+
+    /* Quand un champ est mal rempli, la bordure devient rouge */
+    .champ input.erreur,
+    .champ select.erreur {
+      border-color: #e53935;
+    }
+
+    /* Message d'erreur affiché sous le champ */
+    .msg-erreur {
+      color: #e53935;
+      font-size: 12px;
+      margin-top: 4px;
+      display: none; /* Caché par défaut, affiché par JavaScript si erreur */
+    }
+
+    /* Mise en page avec 2 champs côte à côte (Nom et Post-nom) */
+    .deux-colonnes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    /* Bouton pour envoyer le formulaire */
+    .bouton-envoyer {
+      width: 100%;
+      padding: 14px;
+      background-color: #1a237e;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 6px;
+    }
+
+    /* Couleur du bouton quand on passe la souris dessus */
+    .bouton-envoyer:hover {
+      background-color: #0d47a1;
+    }
+
+    /* Apparence du bouton quand il est désactivé pendant l'envoi */
+    .bouton-envoyer:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* Les écrans de résultat (succès, déjà inscrit, lien invalide) */
+    .ecran {
+      display: none; /* Caché par défaut */
+      text-align: center;
+      padding: 20px 10px;
+    }
+
+    /* Classe ajoutée par JavaScript pour afficher un écran */
+    .ecran.visible {
+      display: block;
+    }
+
+    /* Grande icone dans les écrans de résultat */
+    .ecran img {
+      width: 70px;
+      height: 70px;
+      margin-bottom: 14px;
+    }
+
+    /* Titre dans les écrans de résultat */
+    .ecran h2 {
+      font-size: 21px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    /* Texte dans les écrans de résultat */
+    .ecran p {
+      color: #555;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    /* Couleur verte pour le titre de succès */
+    .ecran-succes h2   { color: #2e7d32; }
+    /* Couleur orange pour "déjà inscrit" */
+    .ecran-deja h2     { color: #e65100; }
+    /* Couleur rouge pour lien invalide */
+    .ecran-invalide h2 { color: #c62828; }
+
+    /* Le formulaire est visible au départ */
+    #ecran-formulaire {
+      display: block;
+    }
+
+    /* Sur petit écran (téléphone étroit), mettre les champs l'un sous l'autre */
+    @media (max-width: 400px) {
+      .deux-colonnes {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="carte">
+
+  <!-- ============================================================
+       ECRAN 1 : LE FORMULAIRE
+       Visible au départ. Caché après envoi.
+  ============================================================ -->
+  <div id="ecran-formulaire">
+
+    <!-- En-tête -->
+    <div class="entete">
+      <!-- Icone clipboard depuis Bootstrap Icons (bibliothèque gratuite) -->
+      <img src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/clipboard2-check.svg" alt="Formulaire"/>
+      <h1>Feuille de Presence</h1>
+      <!-- Ce texte sera mis à jour par JavaScript avec le nom de la matière -->
+      <p id="info-cours">Chargement...</p>
+    </div>
+
+    <!-- Bandeau date -->
+    <div class="bandeau-date">
+      Date du jour : <strong id="date-affichee"></strong>
+    </div>
+
+    <!-- Champ : Matricule -->
+    <div class="champ">
+      <label>Matricule <span>*</span></label>
+      <input type="text" id="matricule" placeholder="Ex: 2024-0001" autocomplete="off"/>
+      <div class="msg-erreur" id="err-matricule">Le matricule est obligatoire.</div>
+    </div>
+
+    <!-- Champs : Nom et Post-nom côte à côte -->
+    <div class="deux-colonnes">
+      <div class="champ">
+        <label>Nom <span>*</span></label>
+        <input type="text" id="nom" placeholder="Votre nom"/>
+        <div class="msg-erreur" id="err-nom">Le nom est obligatoire.</div>
+      </div>
+      <div class="champ">
+        <label>Post-nom <span>*</span></label>
+        <input type="text" id="postnom" placeholder="Votre post-nom"/>
+        <div class="msg-erreur" id="err-postnom">Le post-nom est obligatoire.</div>
+      </div>
+    </div>
+
+    <!-- Champ : Prénoms -->
+    <div class="champ">
+      <label>Prenoms <span>*</span></label>
+      <input type="text" id="prenoms" placeholder="Vos prenoms"/>
+      <div class="msg-erreur" id="err-prenoms">Les prenoms sont obligatoires.</div>
+    </div>
+
+    <!-- Champ : Promotion -->
+    <div class="champ">
+      <label>Promotion <span>*</span></label>
+      <select id="promotion">
+        <option value="">-- Choisir votre promotion --</option>
+        <option>Licence 1 (L1)</option>
+        <option>Licence 2 (L2)</option>
+        <option>Licence 3 (L3)</option>
+        <option>Master 1 (M1)</option>
+        <option>Master 2 (M2)</option>
+        <option>BTS 1ere annee</option>
+        <option>BTS 2eme annee</option>
+        <option>DUT 1ere annee</option>
+        <option>DUT 2eme annee</option>
+      </select>
+      <div class="msg-erreur" id="err-promotion">Choisissez votre promotion.</div>
+    </div>
+
+    <!-- Bouton d'envoi -->
+    <button class="bouton-envoyer" id="btn-envoyer" onclick="enregistrerPresence()">
+      Enregistrer ma presence
+    </button>
+
+  </div><!-- fin ecran-formulaire -->
+
+
+  <!-- ============================================================
+       ECRAN 2 : SUCCES
+       Affiché quand la présence est bien enregistrée
+  ============================================================ -->
+  <div class="ecran ecran-succes" id="ecran-succes">
+    <img src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/check-circle.svg" alt="Succes"/>
+    <h2>Presence enregistree !</h2>
+    <p>Votre presence a bien ete enregistree.<br/>Vous pouvez fermer cette page.</p>
+  </div>
+
+
+  <!-- ============================================================
+       ECRAN 3 : DEJA INSCRIT
+       Affiché si l'étudiant a déjà signé aujourd'hui pour ce cours
+  ============================================================ -->
+  <div class="ecran ecran-deja" id="ecran-deja">
+    <img src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/exclamation-triangle.svg" alt="Attention"/>
+    <h2>Deja enregistre !</h2>
+    <p>Votre presence pour <strong>aujourd'hui</strong> a deja ete enregistree.<br/>Un seul enregistrement par jour est autorise.</p>
+  </div>
+
+
+  <!-- ============================================================
+       ECRAN 4 : LIEN INVALIDE
+       Affiché si l'étudiant n'a pas scanné un vrai QR code
+  ============================================================ -->
+  <div class="ecran ecran-invalide" id="ecran-invalide">
+    <img src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/x-circle.svg" alt="Erreur"/>
+    <h2>Lien invalide</h2>
+    <p>Ce lien ne vient pas d'un QR code valide.<br/>Demandez a votre professeur le bon QR code.</p>
+  </div>
+
+</div><!-- fin carte -->
+
+
+<!-- ============================================================
+     JAVASCRIPT + FIREBASE
+     type="module" est obligatoire pour pouvoir importer Firebase
+============================================================ -->
+<script type="module">
+
+  /* ----------------------------------------------------------
+     ETAPE 1 : IMPORTER LES OUTILS FIREBASE
+     On importe seulement ce dont on a besoin
+  ---------------------------------------------------------- */
+  import { initializeApp }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+
+  import { getFirestore, collection, addDoc, query, where, getDocs }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+
+  /* ----------------------------------------------------------
+     ETAPE 2 : CONFIGURATION FIREBASE
+     Remplace chaque valeur par ce que tu as copié depuis Firebase
+  ---------------------------------------------------------- */
+   const firebaseConfig = {
+    apiKey: "AIzaSyDawOwAJrIF-4Yx-0Vi1IhGpttIHOLA65c",
+    authDomain: "projet-presence-6d214.firebaseapp.com",
+    projectId: "projet-presence-6d214",
+    storageBucket: "projet-presence-6d214.firebasestorage.app",
+    messagingSenderId: "76923682492",
+    appId: "1:76923682492:web:33a8c54472eaa0555c9ab9"
+  };
+  /* Connecter l'application à Firebase */
+  const app = initializeApp(configFirebase);
+
+  /* Obtenir l'accès à la base de données Firestore */
+  const db = getFirestore(app);
+
+
+  /* ----------------------------------------------------------
+     ETAPE 3 : AFFICHER LA DATE DU JOUR
+  ---------------------------------------------------------- */
+  /* Créer la date du jour au format JJ/MM/AAAA */
+  const dateAujourdhui = new Date().toLocaleDateString('fr-FR');
+
+  /* Afficher la date dans le bandeau bleu */
+  document.getElementById('date-affichee').textContent = dateAujourdhui;
+
+
+  /* ----------------------------------------------------------
+     ETAPE 4 : LIRE LES INFOS DU QR CODE
+     Le QR code contient des paramètres dans l'URL :
+     ?matiere=Mathematiques&promotion=L1
+     On les récupère ici.
+  ---------------------------------------------------------- */
+  const parametres = new URLSearchParams(window.location.search);
+  const matiere    = parametres.get('matiere')    || '';
+  const promotion  = parametres.get('promotion')  || '';
+
+  /* Vérifier si on vient d'un QR code (paramètres présents dans l'URL) */
+  if (!matiere && !promotion) {
+    /* Pas de paramètres = formulaire ouvert directement sans QR code */
+    /* On affiche quand même le formulaire mais avec un avertissement visible */
+    document.getElementById('info-cours').textContent =
+      '⚠ Attention : vous devez scanner le QR code de votre professeur pour valider votre presence.';
+    /* Couleur orange pour attirer l'attention */
+    document.getElementById('info-cours').style.color = '#e65100';
+    document.getElementById('info-cours').style.fontWeight = 'bold';
+    document.getElementById('info-cours').style.fontSize = '13px';
+  } else {
+    /* Paramètres présents = vient bien d'un QR code valide */
+    /* Afficher la matière et la promotion en haut du formulaire */
+    document.getElementById('info-cours').textContent =
+      (matiere   ? matiere   : '') +
+      (promotion ? ' - ' + promotion : '');
+    document.getElementById('info-cours').style.color = '#666';
+  }
+
+
+  /* ----------------------------------------------------------
+     FONCTION : VALIDER UN CHAMP
+     Vérifie si un champ est rempli.
+     - Si vide  : montre le message d'erreur, retourne false
+     - Si rempli : cache le message d'erreur, retourne true
+  ---------------------------------------------------------- */
+  function validerChamp(idChamp, idErreur) {
+    /* Lire la valeur du champ et enlever les espaces vides */
+    const valeur = document.getElementById(idChamp).value.trim();
+
+    if (!valeur) {
+      /* Champ vide : ajouter la couleur rouge */
+      document.getElementById(idChamp).classList.add('erreur');
+      /* Afficher le message d'erreur */
+      document.getElementById(idErreur).style.display = 'block';
+      return false; /* Validation échouée */
+    }
+
+    /* Champ rempli : enlever la couleur rouge */
+    document.getElementById(idChamp).classList.remove('erreur');
+    /* Cacher le message d'erreur */
+    document.getElementById(idErreur).style.display = 'none';
+    return true; /* Validation réussie */
+  }
+
+
+  /* ----------------------------------------------------------
+     FONCTION PRINCIPALE : ENREGISTRER LA PRESENCE
+     Appelée quand l'étudiant clique sur le bouton
+     "async" veut dire que la fonction attend la réponse de Firebase
+  ---------------------------------------------------------- */
+  window.enregistrerPresence = async function() {
+
+    /* Valider chaque champ un par un */
+    let toutValide = true;
+    toutValide = validerChamp('matricule', 'err-matricule') && toutValide;
+    toutValide = validerChamp('nom',       'err-nom')       && toutValide;
+    toutValide = validerChamp('postnom',   'err-postnom')   && toutValide;
+    toutValide = validerChamp('prenoms',   'err-prenoms')   && toutValide;
+
+    /* Valider la liste déroulante promotion */
+    const promotionChoisie = document.getElementById('promotion').value;
+    if (!promotionChoisie) {
+      document.getElementById('promotion').classList.add('erreur');
+      document.getElementById('err-promotion').style.display = 'block';
+      toutValide = false;
+    } else {
+      document.getElementById('promotion').classList.remove('erreur');
+      document.getElementById('err-promotion').style.display = 'none';
+    }
+
+    /* Si au moins un champ est vide, on arrête ici */
+    if (!toutValide) return;
+
+    /* Récupérer le matricule en majuscules */
+    const matricule = document.getElementById('matricule').value.trim().toUpperCase();
+
+    /* Désactiver le bouton pour éviter qu'on clique plusieurs fois */
+    const bouton = document.getElementById('btn-envoyer');
+    bouton.disabled = true;
+    bouton.textContent = 'Envoi en cours...';
+
+    try {
+
+      /* --------------------------------------------------------
+         VERIFICATION : L'ETUDIANT EST-IL DEJA INSCRIT ?
+         On cherche dans Firebase s'il existe déjà un document
+         avec le même matricule, la même date ET la même matière
+      -------------------------------------------------------- */
+      const recherche = query(
+        collection(db, "presences"),           /* Dans la collection "presences" */
+        where("matricule", "==", matricule),   /* Même matricule */
+        where("date",      "==", dateAujourdhui), /* Même date */
+        where("matiere",   "==", matiere)      /* Même matière */
+      );
+
+      /* Attendre les résultats de la recherche */
+      const resultats = await getDocs(recherche);
+
+      /* Si on trouve un résultat = déjà inscrit */
+      if (!resultats.empty) {
+        document.getElementById('ecran-formulaire').style.display = 'none';
+        document.getElementById('ecran-deja').classList.add('visible');
+        return; /* Arrêter la fonction ici */
+      }
+
+      /* --------------------------------------------------------
+         ENREGISTREMENT : SAUVEGARDER DANS FIREBASE
+         On crée un nouveau document dans la collection "presences"
+      -------------------------------------------------------- */
+
+      /* Obtenir l'heure actuelle au format HH:MM */
+      const maintenant = new Date();
+      const heure = maintenant.toLocaleTimeString('fr-FR', {
+        hour:   '2-digit',
+        minute: '2-digit'
+      });
+
+      /* Ajouter le document dans Firebase */
+      await addDoc(collection(db, "presences"), {
+        matricule: matricule,
+        nom:       document.getElementById('nom').value.trim().toUpperCase(),
+        postnom:   document.getElementById('postnom').value.trim().toUpperCase(),
+        prenoms:   document.getElementById('prenoms').value.trim(),
+        promotion: promotionChoisie,
+        matiere:   matiere,
+        date:      dateAujourdhui,
+        heure:     heure,
+        timestamp: maintenant.toISOString() /* Date+heure précise pour trier */
+      });
+
+      /* Tout s'est bien passé : afficher l'écran de succès */
+      document.getElementById('ecran-formulaire').style.display = 'none';
+      document.getElementById('ecran-succes').classList.add('visible');
+
+    } catch (erreur) {
+      /* Si une erreur survient (pas d'internet, etc.) */
+      console.error("Erreur Firebase :", erreur);
+      alert('Erreur de connexion. Verifiez votre internet et reessayez.');
+
+      /* Réactiver le bouton pour que l'étudiant puisse réessayer */
+      bouton.disabled = false;
+      bouton.textContent = 'Enregistrer ma presence';
+    }
+
+  }; /* fin de la fonction enregistrerPresence */
+
+</script>
+
+</body>
+</html>

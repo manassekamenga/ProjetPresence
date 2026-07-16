@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <!-- Encodage des caractères -->
+  <meta charset="UTF-8"/>
+  <!-- Pour que la page soit bien affichée sur téléphone -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <!-- Titre visible dans l'onglet du navigateur -->
+  <title>Tableau de bord - Presences</title>
+
+  <style>
+    /* Supprime les marges par défaut */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Style général de la page */
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f0f4f8; /* Fond gris clair */
+      color: #333;
+    }
+
+    /* ============================================================
+       BARRE DU HAUT (HEADER)
+    ============================================================ */
+    .header {
+      background-color: #1a237e; /* Bleu foncé */
+      color: white;
+      padding: 18px 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    /* Titre dans le header */
+    .header h1 {
+      font-size: 21px;
+      font-weight: 700;
+    }
+
+    /* Sous-titre dans le header */
+    .header p {
+      font-size: 13px;
+      opacity: 0.8;
+      margin-top: 3px;
+    }
+
+    /* Lien vers le générateur de QR code */
+    .header a {
+      background-color: rgba(255,255,255,0.2);
+      color: white;
+      text-decoration: none;
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      border: 1px solid rgba(255,255,255,0.3);
+    }
+
+    /* Survol du lien */
+    .header a:hover {
+      background-color: rgba(255,255,255,0.3);
+    }
+
+    /* Indicateur "EN DIRECT" vert */
+    .badge-direct {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background-color: #e8f5e9;
+      color: #2e7d32;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    /* Le petit rond vert qui clignote */
+    .point-direct {
+      width: 8px;
+      height: 8px;
+      background-color: #2e7d32;
+      border-radius: 50%;
+      animation: clignoter 1.5s infinite; /* Animation de clignotement */
+    }
+
+    /* Animation de clignotement */
+    @keyframes clignoter {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.2; }
+    }
+
+    /* ============================================================
+       CARTES STATISTIQUES (Total, Aujourd'hui, Promotions)
+    ============================================================ */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr); /* 3 colonnes égales */
+      gap: 16px;
+      padding: 24px 30px 0;
+    }
+
+    /* Chaque carte statistique */
+    .carte-stat {
+      background-color: white;
+      border-radius: 14px;
+      padding: 22px;
+      text-align: center;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      border-top: 4px solid #1a237e; /* Barre de couleur en haut */
+    }
+
+    /* Variante orange */
+    .carte-stat.orange { border-top-color: #f9a825; }
+    /* Variante verte */
+    .carte-stat.vert   { border-top-color: #2e7d32; }
+
+    /* Grand nombre dans la carte */
+    .carte-stat .nombre {
+      font-size: 38px;
+      font-weight: 800;
+      color: #1a237e;
+    }
+
+    .carte-stat.orange .nombre { color: #f9a825; }
+    .carte-stat.vert   .nombre { color: #2e7d32; }
+
+    /* Texte sous le nombre */
+    .carte-stat .libelle {
+      font-size: 11px;
+      color: #888;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 5px;
+    }
+
+    /* ============================================================
+       ZONE DE FILTRES
+    ============================================================ */
+    .filtres {
+      background-color: white;
+      margin: 20px 30px;
+      border-radius: 14px;
+      padding: 20px 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap; /* Les filtres passent à la ligne sur petit écran */
+      align-items: flex-end;
+    }
+
+    /* Chaque filtre (label + champ) */
+    .filtre-groupe {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    /* Label du filtre */
+    .filtre-groupe label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Champ de filtre (date, liste, texte) */
+    .filtre-groupe input,
+    .filtre-groupe select {
+      padding: 9px 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      min-width: 150px;
+    }
+
+    /* Quand on clique dans un filtre */
+    .filtre-groupe input:focus,
+    .filtre-groupe select:focus {
+      border-color: #1a237e;
+    }
+
+    /* Bouton pour réinitialiser les filtres */
+    .btn-reinitialiser {
+      padding: 9px 18px;
+      background-color: #f0f4f8;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      color: #555;
+    }
+
+    .btn-reinitialiser:hover {
+      background-color: #e0e0e0;
+    }
+
+    /* ============================================================
+       SECTION TABLEAU
+    ============================================================ */
+    .section-tableau {
+      margin: 0 30px 30px;
+      background-color: white;
+      border-radius: 14px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      overflow: hidden; /* Pour arrondir les coins du tableau */
+    }
+
+    /* En-tête du tableau avec titre et boutons */
+    .entete-tableau {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 24px;
+      border-bottom: 1px solid #f0f0f0;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    /* Titre de la section tableau */
+    .entete-tableau h2 {
+      font-size: 16px;
+      color: #1a237e;
+      font-weight: 700;
+    }
+
+    /* Nombre de résultats affichés */
+    .nb-resultats {
+      font-size: 13px;
+      color: #888;
+      margin-top: 3px;
+    }
+
+    /* Groupe de boutons (CSV et Tout effacer) */
+    .boutons-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    /* Bouton exporter CSV */
+    .btn-csv {
+      padding: 9px 16px;
+      background-color: #1a237e;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .btn-csv:hover {
+      background-color: #0d47a1;
+    }
+
+    /* Bouton tout effacer */
+    .btn-effacer {
+      padding: 9px 16px;
+      background-color: #c62828;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .btn-effacer:hover {
+      background-color: #b71c1c;
+    }
+
+    /* Le tableau lui-même */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    /* En-tête du tableau (ligne bleue) */
+    thead {
+      background-color: #1a237e;
+      color: white;
+    }
+
+    /* Cellules de l'en-tête */
+    th {
+      padding: 12px 14px;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Cellules de données */
+    td {
+      padding: 11px 14px;
+      font-size: 13px;
+      border-bottom: 1px solid #f5f5f5;
+    }
+
+    /* Couleur de fond quand on survole une ligne */
+    tr:hover td {
+      background-color: #f8f9ff;
+    }
+
+    /* Badge de promotion (petit rectangle bleu arrondi) */
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      background-color: #e3f2fd;
+      color: #1a237e;
+    }
+
+    /* Bouton supprimer une ligne */
+    .btn-supprimer {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      opacity: 0.5;
+    }
+
+    .btn-supprimer:hover {
+      opacity: 1;
+    }
+
+    /* Icone poubelle dans le bouton supprimer */
+    .btn-supprimer img {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* Ligne affichée quand il n'y a aucune donnée */
+    .ligne-vide td {
+      text-align: center;
+      padding: 40px;
+      color: #aaa;
+      font-style: italic;
+    }
+
+    /* Ligne affichée pendant le chargement */
+    .ligne-chargement td {
+      text-align: center;
+      padding: 30px;
+      color: #1a237e;
+    }
+
+    /* ============================================================
+       ADAPTATION MOBILE (petits ecrans)
+    ============================================================ */
+    @media (max-width: 768px) {
+      /* Les stats passent en colonne sur mobile */
+      .stats {
+        grid-template-columns: 1fr;
+        padding: 16px;
+      }
+      /* Les filtres et tableau prennent toute la largeur */
+      .filtres,
+      .section-tableau {
+        margin: 12px 16px;
+      }
+      .header {
+        padding: 14px 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ============================================================
+     BARRE DU HAUT
+============================================================ -->
+<div class="header">
+  <div>
+    <h1>Gestion des Presences</h1>
+    <p>Tableau de bord - Professeur / Direction</p>
+  </div>
+  <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+    <!-- Indicateur "en direct" : se met à jour automatiquement -->
+    <span class="badge-direct">
+      <span class="point-direct"></span>
+      EN DIRECT
+    </span>
+    <!-- Lien vers le générateur de QR code -->
+    <a href="qr-generator.html">Generer un QR Code</a>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     CARTES STATISTIQUES
+============================================================ -->
+<div class="stats">
+  <!-- Total de toutes les présences dans Firebase -->
+  <div class="carte-stat">
+    <div class="nombre" id="total-count">—</div>
+    <div class="libelle">Total Presences</div>
+  </div>
+  <!-- Présences enregistrées aujourd'hui seulement -->
+  <div class="carte-stat orange">
+    <div class="nombre" id="today-count">—</div>
+    <div class="libelle">Aujourd'hui</div>
+  </div>
+  <!-- Nombre de promotions différentes dans Firebase -->
+  <div class="carte-stat vert">
+    <div class="nombre" id="promo-count">—</div>
+    <div class="libelle">Promotions</div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     ZONE DE FILTRES
+============================================================ -->
+<div class="filtres">
+
+  <!-- Filtre par date -->
+  <div class="filtre-groupe">
+    <label>Date</label>
+    <input type="date" id="filtre-date"/>
+  </div>
+
+  <!-- Filtre par matière (se remplit automatiquement depuis Firebase) -->
+  <div class="filtre-groupe">
+    <label>Matiere</label>
+    <select id="filtre-matiere">
+      <option value="">Toutes</option>
+      <!-- Les options seront ajoutées par JavaScript -->
+    </select>
+  </div>
+
+  <!-- Filtre par promotion -->
+  <div class="filtre-groupe">
+    <label>Promotion</label>
+    <select id="filtre-promotion">
+      <option value="">Toutes</option>
+      <option>Licence 1 (L1)</option>
+      <option>Licence 2 (L2)</option>
+      <option>Licence 3 (L3)</option>
+      <option>Master 1 (M1)</option>
+      <option>Master 2 (M2)</option>
+      <option>BTS 1ere annee</option>
+      <option>BTS 2eme annee</option>
+      <option>DUT 1ere annee</option>
+      <option>DUT 2eme annee</option>
+    </select>
+  </div>
+
+  <!-- Filtre par nom, post-nom ou matricule -->
+  <div class="filtre-groupe">
+    <label>Recherche</label>
+    <input type="text" id="filtre-recherche" placeholder="Nom, post-nom ou matricule..."/>
+  </div>
+
+  <!-- Bouton pour remettre tous les filtres à zéro -->
+  <button class="btn-reinitialiser" onclick="reinitialiserFiltres()">
+    Reinitialiser
+  </button>
+
+</div>
+
+
+<!-- ============================================================
+     TABLEAU DES PRESENCES
+============================================================ -->
+<div class="section-tableau">
+
+  <!-- En-tête du tableau avec compteur et boutons -->
+  <div class="entete-tableau">
+    <div>
+      <h2>Toutes les presences</h2>
+      <!-- Ce texte se met à jour automatiquement avec le nombre de résultats -->
+      <div class="nb-resultats" id="nb-resultats">Chargement...</div>
+    </div>
+    <div class="boutons-actions">
+      <button class="btn-csv"     onclick="exporterCSV()">Exporter CSV</button>
+      <button class="btn-effacer" onclick="toutEffacer()">Tout effacer</button>
+    </div>
+  </div>
+
+  <!-- Défilement horizontal si le tableau est trop large sur mobile -->
+  <div style="overflow-x: auto;">
+    <table>
+      <!-- En-tête des colonnes -->
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Matricule</th>
+          <th>Nom</th>
+          <th>Post-nom</th>
+          <th>Prenoms</th>
+          <th>Promotion</th>
+          <th>Matiere</th>
+          <th>Date</th>
+          <th>Heure</th>
+          <th>Supprimer</th>
+        </tr>
+      </thead>
+      <!-- Le corps du tableau sera rempli automatiquement par JavaScript -->
+      <tbody id="corps-tableau">
+        <tr class="ligne-chargement">
+          <td colspan="10">Connexion a la base de donnees...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div><!-- fin section-tableau -->
+
+
+<!-- ============================================================
+     JAVASCRIPT + FIREBASE
+============================================================ -->
+<script type="module">
+
+  /* ----------------------------------------------------------
+     ETAPE 1 : IMPORTER LES OUTILS FIREBASE NECESSAIRES
+  ---------------------------------------------------------- */
+  import { initializeApp }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+
+  import { getFirestore, collection, onSnapshot, deleteDoc, doc, getDocs }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+
+  /* ----------------------------------------------------------
+     ETAPE 2 : CONFIGURATION FIREBASE
+     Remplace chaque valeur par ce que tu as copié depuis Firebase
+  ---------------------------------------------------------- */
+   const firebaseConfig = {
+    apiKey: "AIzaSyDawOwAJrIF-4Yx-0Vi1IhGpttIHOLA65c",
+    authDomain: "projet-presence-6d214.firebaseapp.com",
+    projectId: "projet-presence-6d214",
+    storageBucket: "projet-presence-6d214.firebasestorage.app",
+    messagingSenderId: "76923682492",
+    appId: "1:76923682492:web:33a8c54472eaa0555c9ab9"
+  };
+
+  /* Connecter l'application à Firebase */
+  const app = initializeApp(configFirebase);
+
+  /* Obtenir l'accès à la base de données */
+  const db = getFirestore(app);
+
+
+  /* ----------------------------------------------------------
+     VARIABLES GLOBALES
+  ---------------------------------------------------------- */
+  /* Toutes les présences récupérées depuis Firebase */
+  let toutesLesPresences = [];
+
+  /* Les présences actuellement affichées dans le tableau (après filtres) */
+  let presencesAffichees = [];
+
+  /* Date du jour au format JJ/MM/AAAA (pour comparer avec les données) */
+  const dateAujourdhui = new Date().toLocaleDateString('fr-FR');
+
+  /* Date au format AAAA-MM-JJ (pour l'input type="date") */
+  const dateInputFormat = new Date().toISOString().split('T')[0];
+
+  /* Mettre la date d'aujourd'hui dans le filtre de date par défaut */
+  document.getElementById('filtre-date').value = dateInputFormat;
+
+
+  /* ----------------------------------------------------------
+     ECOUTE EN TEMPS REEL FIREBASE
+     onSnapshot écoute la base de données en permanence.
+     Dès qu'un étudiant enregistre sa présence, cette fonction
+     est appelée automatiquement et le tableau se met à jour.
+  ---------------------------------------------------------- */
+  onSnapshot(collection(db, "presences"), function(snapshot) {
+
+    /* Vider le tableau local */
+    toutesLesPresences = [];
+
+    /* Parcourir tous les documents reçus de Firebase */
+    snapshot.forEach(function(document) {
+      /* Ajouter chaque présence au tableau, avec son identifiant Firebase */
+      toutesLesPresences.push({
+        id: document.id,          /* Identifiant unique dans Firebase */
+        ...document.data()        /* Toutes les données (nom, matricule, etc.) */
+      });
+    });
+
+    /* Trier du plus récent au plus ancien */
+    toutesLesPresences.sort(function(a, b) {
+      if (a.timestamp && b.timestamp) {
+        return b.timestamp.localeCompare(a.timestamp);
+      }
+      return 0;
+    });
+
+    /* Mettre à jour la liste des matières dans le filtre */
+    mettreAJourFiltreMatiere();
+
+    /* Afficher les données dans le tableau */
+    afficherTableau();
+
+    /* Mettre à jour les 3 cartes statistiques */
+    mettreAJourStats();
+
+  });
+
+
+  /* ----------------------------------------------------------
+     FONCTION : METTRE A JOUR LE FILTRE MATIERE
+     Ajoute automatiquement toutes les matières trouvées
+     dans Firebase dans la liste déroulante du filtre
+  ---------------------------------------------------------- */
+  function mettreAJourFiltreMatiere() {
+    const select = document.getElementById('filtre-matiere');
+
+    /* Garder en mémoire la valeur actuellement sélectionnée */
+    const valeurActuelle = select.value;
+
+    /* Extraire les matières uniques de toutes les présences */
+    const matieres = [...new Set(
+      toutesLesPresences.map(p => p.matiere).filter(Boolean)
+    )];
+
+    /* Réinitialiser la liste avec juste "Toutes" */
+    select.innerHTML = '<option value="">Toutes</option>';
+
+    /* Ajouter chaque matière comme option */
+    matieres.forEach(function(matiere) {
+      const option = document.createElement('option');
+      option.value = matiere;
+      option.textContent = matiere;
+      /* Resélectionner la matière qu'on avait choisie avant */
+      if (matiere === valeurActuelle) option.selected = true;
+      select.appendChild(option);
+    });
+  }
+
+
+  /* ----------------------------------------------------------
+     FONCTION : AFFICHER LE TABLEAU
+     Filtre les présences selon les filtres choisis
+     et affiche les résultats dans le tableau HTML
+  ---------------------------------------------------------- */
+  function afficherTableau() {
+
+    /* Lire les valeurs des filtres */
+    const filtreDate      = document.getElementById('filtre-date').value;
+    const filtreMatiere   = document.getElementById('filtre-matiere').value.toLowerCase();
+    const filtrePromotion = document.getElementById('filtre-promotion').value.toLowerCase();
+    const filtreRecherche = document.getElementById('filtre-recherche').value.toLowerCase();
+
+    /* Convertir la date du filtre (AAAA-MM-JJ) en format affiché (JJ/MM/AAAA) */
+    let datePourComparaison = '';
+    if (filtreDate) {
+      const parties = filtreDate.split('-'); /* [2024, 05, 27] */
+      datePourComparaison = parties[2] + '/' + parties[1] + '/' + parties[0]; /* 27/05/2024 */
+    }
+
+    /* Filtrer les présences selon tous les critères */
+    presencesAffichees = toutesLesPresences.filter(function(p) {
+
+      /* Filtrer par date */
+      if (datePourComparaison && p.date !== datePourComparaison) return false;
+
+      /* Filtrer par matière */
+      if (filtreMatiere && (p.matiere || '').toLowerCase() !== filtreMatiere) return false;
+
+      /* Filtrer par promotion */
+      if (filtrePromotion && (p.promotion || '').toLowerCase() !== filtrePromotion) return false;
+
+      /* Filtrer par recherche (nom, post-nom ou matricule) */
+      if (filtreRecherche) {
+        const texteRecherchable = (
+          (p.nom       || '') + ' ' +
+          (p.postnom   || '') + ' ' +
+          (p.prenoms   || '') + ' ' +
+          (p.matricule || '')
+        ).toLowerCase();
+        if (!texteRecherchable.includes(filtreRecherche)) return false;
+      }
+
+      return true; /* Cette présence passe tous les filtres */
+    });
+
+    /* Mettre à jour le compteur de résultats */
+    document.getElementById('nb-resultats').textContent =
+      presencesAffichees.length + ' resultat(s)';
+
+    /* Récupérer le corps du tableau */
+    const corps = document.getElementById('corps-tableau');
+
+    /* Si aucun résultat, afficher un message */
+    if (presencesAffichees.length === 0) {
+      corps.innerHTML = '<tr class="ligne-vide"><td colspan="10">Aucune presence trouvee</td></tr>';
+      return;
+    }
+
+    /* Construire les lignes du tableau */
+    corps.innerHTML = presencesAffichees.map(function(p, index) {
+      return `
+        <tr>
+          <td><strong>${index + 1}</strong></td>
+          <td><code>${p.matricule || '—'}</code></td>
+          <td><strong>${p.nom     || '—'}</strong></td>
+          <td>${p.postnom         || '—'}</td>
+          <td>${p.prenoms         || '—'}</td>
+          <td><span class="badge">${p.promotion || '—'}</span></td>
+          <td>${p.matiere         || '—'}</td>
+          <td>${p.date            || '—'}</td>
+          <td>${p.heure           || '—'}</td>
+          <td>
+            <button class="btn-supprimer"
+                    onclick="supprimerPresence('${p.id}')"
+                    title="Supprimer cette presence">
+              <img src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/trash.svg" alt="Supprimer"/>
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join(''); /* Coller toutes les lignes ensemble */
+  }
+
+
+  /* ----------------------------------------------------------
+     FONCTION : METTRE A JOUR LES STATISTIQUES
+     Met à jour les 3 cartes (Total, Aujourd'hui, Promotions)
+  ---------------------------------------------------------- */
+  function mettreAJourStats() {
+    /* Total : toutes les présences dans Firebase */
+    document.getElementById('total-count').textContent = toutesLesPresences.length;
+
+    /* Aujourd'hui : seulement celles de la date du jour */
+    const countAujourdhui = toutesLesPresences.filter(function(p) {
+      return p.date === dateAujourdhui;
+    }).length;
+    document.getElementById('today-count').textContent = countAujourdhui;
+
+    /* Promotions : nombre de promotions différentes */
+    const promotionsUniques = new Set(
+      toutesLesPresences.map(p => p.promotion).filter(Boolean)
+    );
+    document.getElementById('promo-count').textContent = promotionsUniques.size;
+  }
+
+
+  /* ----------------------------------------------------------
+     FONCTION : SUPPRIMER UNE PRESENCE
+     Supprime le document Firebase avec cet identifiant
+  ---------------------------------------------------------- */
+  window.supprimerPresence = async function(idDocument) {
+    /* Demander confirmation avant de supprimer */
+    if (!confirm('Supprimer cette presence ?')) return;
+
+    /* Supprimer le document dans Firebase */
+    await deleteDoc(doc(db, "presences", idDocument));
+
+    /* Le tableau se met à jour automatiquement grâce à onSnapshot */
+  };
+
+
+  /* ----------------------------------------------------------
+     FONCTION : REINITIALISER LES FILTRES
+     Remet tous les filtres à leur valeur par défaut
+  ---------------------------------------------------------- */
+  window.reinitialiserFiltres = function() {
+    document.getElementById('filtre-date').value      = dateInputFormat; /* Date d'aujourd'hui */
+    document.getElementById('filtre-matiere').value   = '';
+    document.getElementById('filtre-promotion').value = '';
+    document.getElementById('filtre-recherche').value = '';
+    /* Réafficher le tableau avec les filtres réinitialisés */
+    afficherTableau();
+  };
+
+
+  /* ----------------------------------------------------------
+     FONCTION : EXPORTER EN CSV
+     Crée un fichier CSV avec les présences affichées
+     et le télécharge sur l'ordinateur du professeur
+  ---------------------------------------------------------- */
+  window.exporterCSV = function() {
+    /* Vérifier qu'il y a des données à exporter */
+    if (presencesAffichees.length === 0) {
+      alert('Aucune donnee a exporter.');
+      return;
+    }
+
+    /* Créer la première ligne du CSV (les noms des colonnes) */
+    const entete = ['#', 'Matricule', 'Nom', 'Post-nom', 'Prenoms', 'Promotion', 'Matiere', 'Date', 'Heure'];
+
+    /* Créer une ligne par présence */
+    const lignes = presencesAffichees.map(function(p, i) {
+      /* Chaque cellule est entre guillemets pour éviter les problèmes avec les virgules */
+      return [
+        i + 1,
+        p.matricule || '',
+        p.nom       || '',
+        p.postnom   || '',
+        p.prenoms   || '',
+        p.promotion || '',
+        p.matiere   || '',
+        p.date      || '',
+        p.heure     || ''
+      ].map(v => '"' + v + '"').join(',');
+    });
+
+    /* Assembler toutes les lignes avec des retours à la ligne */
+    const contenuCSV = [entete.join(','), ...lignes].join('\n');
+
+    /* Créer le fichier et le télécharger */
+    const blob = new Blob(['\ufeff' + contenuCSV], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const lien = document.createElement('a');
+    lien.href     = url;
+    lien.download = 'presences_' + dateAujourdhui.replace(/\//g, '-') + '.csv';
+    lien.click(); /* Déclencher le téléchargement */
+  };
+
+
+  /* ----------------------------------------------------------
+     FONCTION : TOUT EFFACER
+     Supprime TOUTES les présences dans Firebase
+     (demande une double confirmation avant)
+  ---------------------------------------------------------- */
+  window.toutEffacer = async function() {
+    /* Double confirmation car action irréversible */
+    if (!confirm('Attention ! Supprimer TOUTES les presences ? Cette action est irreversible !')) return;
+
+    /* Récupérer tous les documents de la collection */
+    const tousLesDocuments = await getDocs(collection(db, "presences"));
+
+    /* Créer une promesse de suppression pour chaque document */
+    const suppressions = tousLesDocuments.docs.map(function(document) {
+      return deleteDoc(doc(db, "presences", document.id));
+    });
+
+    /* Attendre que toutes les suppressions soient terminées */
+    await Promise.all(suppressions);
+
+    alert('Toutes les presences ont ete supprimees.');
+  };
+
+
+  /* ----------------------------------------------------------
+     ECOUTER LES CHANGEMENTS DE FILTRES
+     Chaque fois qu'un filtre change, on réaffiche le tableau
+  ---------------------------------------------------------- */
+  ['filtre-date', 'filtre-matiere', 'filtre-promotion', 'filtre-recherche'].forEach(function(id) {
+    document.getElementById(id).addEventListener('input',  afficherTableau);
+    document.getElementById(id).addEventListener('change', afficherTableau);
+  });
+
+</script>
+
+</body>
+</html>
